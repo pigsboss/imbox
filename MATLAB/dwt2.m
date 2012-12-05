@@ -9,35 +9,46 @@ function [c,w]=dwt2(x,J)
 % c - maximum scaling function (redundant)
 % w - wavelet from scale 1 to J
 %
-
 [d1,d2]=size(x);
 
 if nargin==1
-    J=floor(log(min(d1,d2))/log(2))-1;
+    J=lastpow2(min(d1,d2));
 end
-
 if J==0
     c=x;
     w=zeros(size(c));
     return
 end
-
-% configuration
-szEdge=2^(J); % size of purfled mirror, in pixels.
-
-% mirroring boundary
-%
-% purfling with mirror edge
-xpurf=mirrorpurfle(x,szEdge);
-% find ceiling 2^n
-D=max(d1+2*szEdge,d2+2*szEdge);
-N=2^ceil(log(D)/log(2));
-% zero-padding
-X=zeros(N);
-X(1:(d1+2*szEdge),1:(d2+2*szEdge))=xpurf;
-
+% kernel padding
+kPadSz=2^J;
+x=padarray(x,[kPadSz kPadSz],'symmetric','both');
+% square padding
+N=2^nextpow2(max(d1,d2)+2*kPadSz);
+sPadSz=N*ones(1,2)-[d1 d2];
+x=padarray(x,sPadSz,'symmetric','post');
 % a trous wavelet transform
-c=X;
+[c,w]=atrous2(x,J);
+c=c((1+kPadSz):(d1+kPadSz),(1+kPadSz):(d2+kPadSz));
+w=w((1+kPadSz):(d1+kPadSz),(1+kPadSz):(d2+kPadSz),:);
+return
+
+function [c,w]=atrous2(x,J)
+%ATROUS A Trous wavelet transform.
+% The convolution is calculated through FFT.
+% The wavelet function is a spline of degree 3.
+%
+% x - original function, must be N x N
+% J - maximum scale
+%
+% Returns:
+% c - maximum scaling function (redundant)
+% w - wavelet from scale 1 to J
+%
+% Reference:
+% J.-L. Starck and F. Murtagh, Astronomical Image and Data Analysis, 2nd
+% Edition, Springer, p31-p32
+c=x;
+[N,~]=size(x);
 if J > 0
     w=zeros(N,N,J);
     for k=0:J-1
@@ -48,11 +59,11 @@ if J > 0
         h(mod(N-2^k,N)+1)=1/4;
         h(mod(N-2^(k+1),N)+1)=1/16;
         h=h*h';
-        cnext=real(ifft2(fft2(c).*fft2(h)));
+        cnext=fftshift(imconv(h,c));
         w(:,:,k+1)=c-cnext;
         c=cnext;
     end
+else
+    w=[];
 end
-c=c((1+szEdge):(d1+szEdge),(1+szEdge):(d2+szEdge));
-w=w((1+szEdge):(d1+szEdge),(1+szEdge):(d2+szEdge),:);
 return

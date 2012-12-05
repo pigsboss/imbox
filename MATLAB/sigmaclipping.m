@@ -6,8 +6,8 @@ function sigma=sigmaclipping(x,k)
 if nargin<2
     k=3;
 end
-MAX_LOOP=20;
-x=x(:);
+MAX_LOOP=100;
+x=x(:)-mean(x(:));
 sigma=std(x(:));
 for n=1:MAX_LOOP
     l=logical(abs(x)<=(k*sigma));
