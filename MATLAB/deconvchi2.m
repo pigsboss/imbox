@@ -30,12 +30,12 @@ for k=1:NUMIT
     chi2(k)=sum(delta(:).^2)/sigma2;
     G=-imconv(delta/sigma2,IPSF);
     Q=imconv(G,PSF);
-    gamma=(Q(:)'*I_virt(:) - I(:)'*Q(:))/(Q(:)'*Q(:));
-    gamma=rand(1)*2*gamma;
-    O=O-gamma*G;
+    gamma=(Q(:)'*I_virt(:) - I(:)'*Q(:))/sum(Q(:).^2);
+    O=O-rand(1)*2*gamma*G;
     O=O.*double(O>=bg)+bg*double(O<bg);
     if k>1
         if abs(chi2(k)-chi2(k-1))<1e-3
+            disp('chi-square converges.');
             break
         end
     end

@@ -23,21 +23,27 @@ J=zeros(NUMIT,1);
 chi2=J;
 O=I;
 sigma2=sigma^2;
-gamma=(sigma2)*0.5;
 IPSF=rot90(PSF,2);
 if isempty(alpha)
     alpha=0.5*max(PSF(:))/sigma;
 end
+rng('shuffle')
 for k=1:NUMIT
-    delta=I-imconv(O,PSF);
+    I_virt=imconv(O,PSF);
+    delta=I-I_virt;
     chi2(k)=sum(delta(:).^2)/sigma2;
     lnterm=log(O./BG);
     J(k)=chi2(k)/2 - alpha*sum(sum(O-BG-O.*lnterm));
-    G=0-imconv(delta/sigma2,IPSF)+alpha*(1./BG+lnterm-1);
-    O=O-gamma*G;
+    G=-imconv(delta/sigma2,IPSF) + alpha*lnterm;
+    Q=imconv(G,PSF);
+    gamma=(Q(:)'*I_virt(:) - I(:)'*Q(:))/sum(Q(:).^2);
+    %gamma=(BG*(Q(:)'*I_virt(:)-Q(:)'*I(:))+alpha*(Q(:)'*O(:)+sum(G(:))))/...
+    %    (BG*sum(Q(:).^2)+alpha*sum(G(:).^2));
+    O=O-rand(1)*2*gamma*G;
     O=O.*double(O>=BG)+BG*double(O<BG);
     if k>1
         if abs(J(k)-J(k-1))<1e-3
+            disp('chi-square-max-entropy converges.');
             break
         end
     end
