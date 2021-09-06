@@ -1,0 +1,126 @@
+\documentclass{article}
+\usepackage{graphicx,amsmath,amsfonts,xfrac,hyperref}
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\tv}{\mathrm{TV}}
+\newcommand{\mse}[2]{\mathrm{MSE}\left(#1 \left| #2 \right. \right)}
+\newcommand{\trans}[1]{\mathbf{#1}^\mathrm{T}}
+\begin{document}
+\title{Source separation by minimum total variation}
+\author{Huo Zhuoxi}
+\maketitle
+\section{Minimization}
+Total variation (TV) of a given image $\vect{f}$ contains $N$ pixels in total is defined as
+\begin{equation}
+\mathrm{TV}(\vect{f}) = \sum_i^N \left( \nabla^2 f \right)_i^2\text{,}
+\end{equation}
+where $\nabla^2$ is the Laplacian operator.
+It smoothes the image $\vect{f}$ while minimizing its TV.
+A mean squared error (MSE) of an image $\vect{f}$ with respect to its model $\overline{\vect{f}}$ and weighted by reciprocal of the model uncertainty is defined as
+\begin{equation}
+\mse{\vect{f}}{\overline{\vect{f}}} = \sum_i^N \frac{\left( f_i - \overline{f}_i \right)^2}{2 \sigma_i^2}\text{,}
+\end{equation}
+where $\sigma_i$ is the standard deviation of the model $\overline{\vect{f}}$ at the $i$-th pixel.
+
+The objective function is defined as
+\begin{equation}
+J  = \tv(\vect{f} - m \vect{g}) + \alpha \mse{\vect{g}}{\vect{p}}\text{,}
+\label{eq-min-obj}
+\end{equation}
+where $\vect{f}$ is the original image contains a foreground point source and a background smooth object, $\vect{g}$ is the normalized profile of the separate foreground image, i.e., $\sum_i g_i = 1$, with $m$ being its total flux, $\vect{p}$ is the normalized profile of point source, i.e., the point spread function (PSF), and $\alpha$ is the factor balancing weights of TV term and MSE term in the objective function.
+
+The TV term in Eq. \ref{eq-min-obj} is a quadratic function of $\vect{g}$
+\begin{equation}
+\tv(\vect{f} - m \vect{g}) = m^2 \langle \vect{L}\vect{g}, \vect{L}\vect{g}\rangle + \langle \vect{L}\vect{f}, \vect{L}\vect{f} \rangle - 2 m \langle \vect{L}\vect{f}, \vect{L}\vect{g}\rangle \text{,}
+\label{eq-tv-quad}
+\end{equation}
+where $\vect{L}$ is a toeplitz matrix serves as the Laplacian operator
+\begin{equation}
+\vect{L} \vect{f} = \nabla^2 \vect{f}\text{,}
+\end{equation}
+and $\langle \cdot, \cdot \rangle$ denotes the inner product.
+The MSE term in Eq. \ref{eq-min-obj} is also a quadratic function of $\vect{g}$
+\begin{equation}
+\mse{\vect{g}}{\vect{p}} = \frac{1}{2}\langle \vect{W}\vect{g}, \vect{W}\vect{g}\rangle - \langle \vect{W}\vect{p}, \vect{W}\vect{g} \rangle\text{,}
+\end{equation}
+where $\vect{W}$ is a diagonal matrix of weights
+\begin{equation}
+\vect{W} = \mathrm{diag}\left( \frac{1}{\sigma_1}, \frac{1}{\sigma_2}, \cdots, \frac{1}{\sigma_N} \right) = \begin{pmatrix}
+  \frac{1}{\sigma_1} & 0 & \cdots & 0 \\
+  0 & \frac{1}{\sigma_2} & \cdots & 0 \\
+  \vdots & \vdots & \ddots & \vdots \\
+  0 & 0 & \cdots & \frac{1}{\sigma_N}
+\end{pmatrix}\text{.}
+\end{equation}
+Therefore the objective function $J$ is a quadratic function of $\vect{g}$, i.e.,
+\begin{equation}
+J(\vect{g},m) = \frac{1}{2}\langle \left( 2 m^2 \trans{L}\vect{L} + \alpha \trans{W}\vect{W} \right)\vect{g}, \vect{g}\rangle - \langle \left(2 m \trans{L}\vect{L} + \alpha\trans{W}\vect{W}\right) \vect{f}, \vect{g}\rangle\text{,}
+\end{equation}
+given the constant term $\langle \vect{L}\vect{f}, \vect{L}\vect{f} \rangle$ in Eq. \ref{eq-tv-quad} is omitted.
+
+The foreground point source is separated from the image through finding $\vect{g}$ and $m$ that minimize $J$.
+To find $m$ that minimizes $J$ while having $\vect{g}$ fixed we can solve the following equation
+\begin{equation}
+\frac{\partial J}{\partial m} = m\langle \vect{L}\vect{g}, \vect{L}\vect{g}\rangle - \langle \vect{L}\vect{f}, \vect{L}\vect{g}\rangle = 0
+\end{equation}
+directly and find
+\begin{equation}
+m = \frac{\langle \vect{L}\vect{f}, \vect{L}\vect{g}\rangle}{\langle \vect{L}\vect{g}, \vect{L}\vect{g}\rangle}\text{.}
+\end{equation}
+Minimizing $J$ with fixed $m$ is equivalent to solving the following linear system of linear equations
+\begin{equation}
+\vect{A}\vect{g} = \vect{b}\text{,}
+\end{equation}
+where
+\begin{equation}
+\vect{A} = 2 m^2 \trans{L}\vect{L} + \alpha \trans{W}\vect{W}\text{,}
+\end{equation}
+and
+\begin{equation}
+\vect{b} = 2 m \trans{L}\vect{L}\vect{f} + \alpha \trans{W}\vect{W}\vect{p}\text{.}
+\end{equation}
+
+The following algorithm is designed to find a solution $\vect{g}^\ast$ as well as the corresponding $m$ iteratively.
+\begin{enumerate}
+\item Let $k = 0$, initial total flux $m = 1$, initial profile of separate point source $\vect{g}_0 = \vect{p}$, the residual $\vect{r}_0 = \vect{b} - \vect{A}\vect{g}_0$ and $\vect{q}_0 = \vect{r}_0$.
+\item If the residual $\vect{r}_k$ is small enough then let $\vect{g}^\ast = \vect{g}_k$ and exit,
+otherwise proceed to the following loop.
+  \begin{enumerate}
+    \item Update the profile of separate foreground point source by the following conjugate gradient iteration
+    \begin{equation}
+    \begin{aligned}
+    a_k            & = \frac{\trans{r}_k \vect{r}_k}{\trans{q}_k\vect{A}\vect{q}_k}\text{,} \\
+    \vect{g}_{k+1} & = \vect{g}_k + a_k \vect{q}_k\text{,} \\
+    \vect{r}_{k+1} & = \vect{b} - \vect{A}\vect{g}_{k+1}\text{,} \\
+    \beta_k        & = \frac{\trans{r}_{k+1}\vect{r}_{k+1}}{\trans{r}_{k}\vect{r}_{k}}\text{,} \\
+    \vect{q}_{k+1} & = \vect{r}_{k+1} + \beta_k \vect{q}_k\text{.}
+    \end{aligned}
+    \end{equation}
+    \item Impose non-negative constraint
+    \begin{equation}
+    g_{i,k+1} = \begin{cases}
+    g_{i,k+1}\text{,} \quad & g_{i,k+1} \geq 0 \\
+    0        \text{,} \quad & \text{otherwise}
+    \end{cases}
+    \end{equation}
+    as well as finite-support constraint
+    \begin{equation}
+    g_{i,k+1} = \begin{cases}
+    g_{i,k+1}\text{,} \quad & i \in S \\
+            0\text{,} \quad & \text{otherwise}
+    \end{cases}
+    \end{equation}
+    on each pixel of $\vect{g}_{k+1}$, where $S$ is the finite support of $\vect{g}$.
+    \item Update total flux of separate foreground point source
+    \begin{equation}
+    m = \frac{\trans{f}\trans{L}\vect{L}\vect{g}_{k+1}}{\trans{g}_{k+1}\trans{L}\vect{L}\vect{g}_{k+1}}\text{.}
+    \end{equation}
+    \item Let $k = k+1$ and continue.
+  \end{enumerate}
+\end{enumerate}
+
+%\begin{equation}
+%\begin{split}
+%  \frac{\partial J}{\partial g_j} = 2 \nabla^2 \nabla^2 (g - f)_j + \alpha \left[ \frac{g_j - p_j \sum_k g_k}{\sigma_j^2} - \sum_i \frac{g_i p_i - p_i^2 \sum_k g_k}{\sigma_i^2} \right].
+%\end{split}
+%\end{equation}
+\end{document}

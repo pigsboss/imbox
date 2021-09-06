@@ -1,0 +1,39 @@
+function y=symmshift(x,vec)
+%SYMMSHIFT 2D array shift with symmetric boundary.
+sizex = size(x);
+vec = mod(vec, 2*sizex);
+xud = flipud(x);
+xlr = fliplr(x);
+xrot = rot90(x,2);
+if vec(1) < sizex(1)
+    if vec(2) < sizex(2)
+        y = [xrot((sizex(1)-vec(1)+1):sizex(1), (sizex(2)-vec(2)+1):sizex(2))...
+            xud((sizex(1)-vec(1)+1):sizex(1), 1:(sizex(2)-vec(2)));...
+            xlr(1:(sizex(1)-vec(1)), (sizex(2)-vec(2)+1):sizex(2)),...
+            x(1:(sizex(1)-vec(1)), 1:(sizex(2)-vec(2)))];
+        return
+    else
+        vec(2) = vec(2) - sizex(2);
+        y = [xud((sizex(1)-vec(1)+1):sizex(1), (sizex(2)-vec(2)+1):sizex(2))...
+            xrot((sizex(1)-vec(1)+1):sizex(1), 1:(sizex(2)-vec(2)));...
+            x(1:(sizex(1)-vec(1)), (sizex(2)-vec(2)+1):sizex(2)),...
+            xlr(1:(sizex(1)-vec(1)), 1:(sizex(2)-vec(2)))];
+        return
+    end
+else
+    vec(1) = vec(1) - sizex(1);
+    if vec(2) < sizex(2)
+        y = [xlr((sizex(1)-vec(1)+1):sizex(1), (sizex(2)-vec(2)+1):sizex(2))...
+            x((sizex(1)-vec(1)+1):sizex(1), 1:(sizex(2)-vec(2)));...
+            xrot(1:(sizex(1)-vec(1)), (sizex(2)-vec(2)+1):sizex(2)),...
+            xud(1:(sizex(1)-vec(1)), 1:(sizex(2)-vec(2)))];
+        return
+    else
+        vec(2) = vec(2) - sizex(2);
+        y = [x((sizex(1)-vec(1)+1):sizex(1), (sizex(2)-vec(2)+1):sizex(2))...
+            xlr((sizex(1)-vec(1)+1):sizex(1), 1:(sizex(2)-vec(2)));...
+            xud(1:(sizex(1)-vec(1)), (sizex(2)-vec(2)+1):sizex(2)),...
+            xrot(1:(sizex(1)-vec(1)), 1:(sizex(2)-vec(2)))];
+        return
+    end
+end
